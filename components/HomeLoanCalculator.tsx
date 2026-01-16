@@ -97,10 +97,13 @@ export default function HomeLoanCalculator() {
               type="range"
               value={inputs.annualRate}
               onChange={(e) => handleInputChange('annualRate', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="5"
               max="15"
               step="0.1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.annualRate - 5) / (15 - 5)) * 100}%, #e5e7eb ${((inputs.annualRate - 5) / (15 - 5)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -121,10 +124,13 @@ export default function HomeLoanCalculator() {
               type="range"
               value={inputs.tenureYears}
               onChange={(e) => handleInputChange('tenureYears', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="5"
               max="30"
               step="1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.tenureYears - 5) / (30 - 5)) * 100}%, #e5e7eb ${((inputs.tenureYears - 5) / (30 - 5)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
         </div>
@@ -146,10 +152,13 @@ export default function HomeLoanCalculator() {
               type="range"
               value={inputs.prepaymentAmount}
               onChange={(e) => handleInputChange('prepaymentAmount', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="0"
               max="5000000"
               step="50000"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.prepaymentAmount || 0) / 5000000) * 100}%, #e5e7eb ${((inputs.prepaymentAmount || 0) / 5000000) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -170,10 +179,13 @@ export default function HomeLoanCalculator() {
               type="range"
               value={inputs.prepaymentMonth}
               onChange={(e) => handleInputChange('prepaymentMonth', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="0"
               max={inputs.tenureYears * 12}
               step="6"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.prepaymentMonth || 0) / (inputs.tenureYears * 12)) * 100}%, #e5e7eb ${((inputs.prepaymentMonth || 0) / (inputs.tenureYears * 12)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -194,10 +206,13 @@ export default function HomeLoanCalculator() {
               type="range"
               value={inflationRate}
               onChange={(e) => setInflationRate(parseFloat(e.target.value) || 0)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="0"
               max="15"
               step="0.1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(inflationRate / 15) * 100}%, #e5e7eb ${(inflationRate / 15) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
         </div>

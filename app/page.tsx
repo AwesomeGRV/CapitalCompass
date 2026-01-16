@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import Navigation from '@/components/Navigation';
 import MutualFundCalculator from '@/components/MutualFundCalculator';
 import HomeLoanCalculator from '@/components/HomeLoanCalculator';
@@ -36,9 +37,11 @@ export default function Home() {
       />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-fade-in">
-          {renderCalculator()}
-        </div>
+        <ErrorBoundary>
+          <div className="animate-fade-in">
+            {renderCalculator()}
+          </div>
+        </ErrorBoundary>
       </main>
 
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-16">

@@ -82,10 +82,13 @@ export default function FixedDepositCalculator() {
               type="range"
               value={inputs.principal}
               onChange={(e) => handleInputChange('principal', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="1000"
               max="10000000"
               step="10000"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.principal - 1000) / (10000000 - 1000)) * 100}%, #e5e7eb ${((inputs.principal - 1000) / (10000000 - 1000)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -106,10 +109,13 @@ export default function FixedDepositCalculator() {
               type="range"
               value={inputs.annualRate}
               onChange={(e) => handleInputChange('annualRate', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="3"
               max="10"
               step="0.1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.annualRate - 3) / (10 - 3)) * 100}%, #e5e7eb ${((inputs.annualRate - 3) / (10 - 3)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
         </div>
@@ -132,10 +138,13 @@ export default function FixedDepositCalculator() {
               type="range"
               value={inputs.years}
               onChange={(e) => handleInputChange('years', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="1"
               max="10"
               step="0.5"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.years - 1) / (10 - 1)) * 100}%, #e5e7eb ${((inputs.years - 1) / (10 - 1)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -171,10 +180,13 @@ export default function FixedDepositCalculator() {
               type="range"
               value={inflationRate}
               onChange={(e) => setInflationRate(parseFloat(e.target.value) || 0)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="0"
               max="15"
               step="0.1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(inflationRate / 15) * 100}%, #e5e7eb ${(inflationRate / 15) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
         </div>

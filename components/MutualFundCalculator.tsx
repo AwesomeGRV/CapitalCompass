@@ -89,10 +89,13 @@ export default function MutualFundCalculator() {
               type="range"
               value={inputs.monthlyInvestment}
               onChange={(e) => handleInputChange('monthlyInvestment', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="500"
               max="100000"
               step="500"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.monthlyInvestment - 500) / (100000 - 500)) * 100}%, #e5e7eb ${((inputs.monthlyInvestment - 500) / (100000 - 500)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -112,10 +115,13 @@ export default function MutualFundCalculator() {
               type="range"
               value={inputs.lumpSumAmount}
               onChange={(e) => handleInputChange('lumpSumAmount', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="0"
               max="1000000"
               step="1000"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.lumpSumAmount || 0) / 1000000) * 100}%, #e5e7eb ${((inputs.lumpSumAmount || 0) / 1000000) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -136,10 +142,13 @@ export default function MutualFundCalculator() {
               type="range"
               value={inputs.annualRate}
               onChange={(e) => handleInputChange('annualRate', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="1"
               max="30"
               step="0.1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.annualRate - 1) / (30 - 1)) * 100}%, #e5e7eb ${((inputs.annualRate - 1) / (30 - 1)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
         </div>
@@ -162,10 +171,13 @@ export default function MutualFundCalculator() {
               type="range"
               value={inputs.years}
               onChange={(e) => handleInputChange('years', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="1"
               max="40"
               step="1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.years - 1) / (40 - 1)) * 100}%, #e5e7eb ${((inputs.years - 1) / (40 - 1)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -186,10 +198,13 @@ export default function MutualFundCalculator() {
               type="range"
               value={inputs.stepUpPercentage}
               onChange={(e) => handleInputChange('stepUpPercentage', e.target.value)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="0"
               max="20"
               step="1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((inputs.stepUpPercentage || 0) / 20) * 100}%, #e5e7eb ${((inputs.stepUpPercentage || 0) / 20) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
 
@@ -210,10 +225,13 @@ export default function MutualFundCalculator() {
               type="range"
               value={inflationRate}
               onChange={(e) => setInflationRate(parseFloat(e.target.value) || 0)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
               min="0"
               max="20"
               step="0.1"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(inflationRate / 20) * 100}%, #e5e7eb ${(inflationRate / 20) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
         </div>

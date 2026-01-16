@@ -10,6 +10,7 @@ interface NavigationProps {
 
 export default function Navigation({ activeCalculator, onCalculatorChange }: NavigationProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -17,6 +18,7 @@ export default function Navigation({ activeCalculator, onCalculatorChange }: Nav
     const theme = savedTheme || (prefersDark ? 'dark' : 'light');
     setIsDarkMode(theme === 'dark');
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    setIsLoading(false);
   }, []);
 
   const toggleDarkMode = () => {
