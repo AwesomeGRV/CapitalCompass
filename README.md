@@ -55,8 +55,8 @@ A comprehensive suite of financial calculators built with Next.js, TypeScript, a
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/financial-calculators.git
-cd financial-calculators
+git clone https://github.com/<your-username>/CapitalCompass.git
+cd CapitalCompass
 
 # Install dependencies
 npm install
