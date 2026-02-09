@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LoanInputs, calculateEMI, generateAmortizationSchedule, calculateInflationAdjustedValue, formatCurrency, AmortizationEntry } from '@/utils/financial-calculations';
+import { LoanInputs, calculateEMI, generateAmortizationSchedule, calculateInflationAdjustedValue, formatCurrency, AmortizationEntry, calculateAdvancedLoanMetrics, calculateLoanAffordability } from '@/utils/financial-calculations';
 
 export default function HomeLoanCalculator() {
   const [inputs, setInputs] = useState<LoanInputs>({
@@ -10,6 +10,11 @@ export default function HomeLoanCalculator() {
     tenureYears: 20,
     prepaymentAmount: 0,
     prepaymentMonth: 0,
+    processingFee: 0,
+    insuranceAmount: 0,
+    loanType: 'home',
+    taxSection: '24b',
+    variableRates: [],
   });
 
   const [inflationRate, setInflationRate] = useState(6);
@@ -17,17 +22,32 @@ export default function HomeLoanCalculator() {
     emi: number;
     totalInterest: number;
     totalAmount: number;
+    effectiveLoanAmount: number;
   } | null>(null);
 
   const [amortizationSchedule, setAmortizationSchedule] = useState<AmortizationEntry[]>([]);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [advancedMetrics, setAdvancedMetrics] = useState<{
+    totalTaxBenefits: number;
+    effectiveInterestRate: number;
+    realCostOfLoan: number;
+    inflationAdjustedTotalCost: number;
+    averageMonthlyEmi: number;
+    interestToPrincipalRatio: number;
+  } | null>(null);
 
   useEffect(() => {
     calculateResults();
   }, [inputs, inflationRate]);
 
   const calculateResults = () => {
-    const results = calculateEMI(inputs.loanAmount, inputs.annualRate, inputs.tenureYears);
+    const results = calculateEMI(
+      inputs.loanAmount, 
+      inputs.annualRate, 
+      inputs.tenureYears, 
+      inputs.processingFee, 
+      inputs.insuranceAmount
+    );
     setEmiResults(results);
 
     const schedule = generateAmortizationSchedule(
@@ -35,14 +55,27 @@ export default function HomeLoanCalculator() {
       inputs.annualRate,
       inputs.tenureYears,
       inputs.prepaymentAmount,
-      inputs.prepaymentMonth
+      inputs.prepaymentMonth,
+      inputs.processingFee,
+      inputs.insuranceAmount,
+      inflationRate,
+      inputs.loanType,
+      inputs.taxSection,
+      inputs.variableRates
     );
     setAmortizationSchedule(schedule);
+
+    const metrics = calculateAdvancedLoanMetrics(schedule, inflationRate, inputs.loanType);
+    setAdvancedMetrics(metrics);
   };
 
-  const handleInputChange = (field: keyof LoanInputs, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    setInputs(prev => ({ ...prev, [field]: numValue }));
+  const handleInputChange = (field: keyof LoanInputs, value: string | number | any) => {
+    if (field === 'loanType' || field === 'taxSection') {
+      setInputs(prev => ({ ...prev, [field]: value }));
+    } else {
+      const numValue = parseFloat(value as string) || 0;
+      setInputs(prev => ({ ...prev, [field]: numValue }));
+    }
   };
 
   const inflationAdjustedTotalCost = emiResults 
@@ -215,6 +248,67 @@ export default function HomeLoanCalculator() {
               }}
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Loan Type
+            </label>
+            <select
+              value={inputs.loanType}
+              onChange={(e) => handleInputChange('loanType', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="home">Home Loan</option>
+              <option value="personal">Personal Loan</option>
+              <option value="car">Car Loan</option>
+              <option value="education">Education Loan</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Processing Fee (₹)
+            </label>
+            <input
+              type="number"
+              value={inputs.processingFee}
+              onChange={(e) => handleInputChange('processingFee', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              min="0"
+              step="1000"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Insurance Amount (₹)
+            </label>
+            <input
+              type="number"
+              value={inputs.insuranceAmount}
+              onChange={(e) => handleInputChange('insuranceAmount', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              min="0"
+              step="1000"
+            />
+          </div>
+
+          {inputs.loanType === 'home' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tax Section
+              </label>
+              <select
+                value={inputs.taxSection}
+                onChange={(e) => handleInputChange('taxSection', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="24b">Section 24(b) - Interest</option>
+                <option value="80c">Section 80(c) - Principal</option>
+                <option value="none">No Tax Benefits</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -240,14 +334,49 @@ export default function HomeLoanCalculator() {
             <p className="text-2xl font-bold text-purple-900 dark:text-purple-300">
               {formatCurrency(emiResults.totalAmount)}
             </p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+              Effective: {formatCurrency(emiResults.effectiveLoanAmount)}
+            </p>
           </div>
           <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
             <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Inflation Adjusted</p>
             <p className="text-2xl font-bold text-orange-900 dark:text-orange-300">
-              {formatCurrency(inflationAdjustedTotalCost)}
+              {formatCurrency(advancedMetrics?.inflationAdjustedTotalCost || 0)}
             </p>
             <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
               Today's purchasing power
+            </p>
+          </div>
+        </div>
+      )}
+
+      {advancedMetrics && (
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium">Real Cost of Loan</p>
+            <p className="text-xl font-bold text-red-900 dark:text-red-300">
+              {formatCurrency(advancedMetrics.realCostOfLoan)}
+            </p>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+              After tax benefits
+            </p>
+          </div>
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
+            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Tax Benefits</p>
+            <p className="text-xl font-bold text-indigo-900 dark:text-indigo-300">
+              {formatCurrency(advancedMetrics.totalTaxBenefits)}
+            </p>
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+              Total savings
+            </p>
+          </div>
+          <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg">
+            <p className="text-sm text-teal-600 dark:text-teal-400 font-medium">Effective Rate</p>
+            <p className="text-xl font-bold text-teal-900 dark:text-teal-300">
+              {advancedMetrics.effectiveInterestRate}%
+            </p>
+            <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">
+              Interest-to-Principal: {advancedMetrics.interestToPrincipalRatio}x
             </p>
           </div>
         </div>

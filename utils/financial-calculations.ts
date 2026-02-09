@@ -19,6 +19,11 @@ export interface LoanInputs {
   tenureYears: number;
   prepaymentAmount?: number;
   prepaymentMonth?: number;
+  processingFee?: number;
+  insuranceAmount?: number;
+  loanType?: 'home' | 'personal' | 'car' | 'education';
+  taxSection?: '24b' | '80c' | 'none';
+  variableRates?: { year: number; rate: number }[];
 }
 
 export interface AmortizationEntry {
@@ -27,6 +32,10 @@ export interface AmortizationEntry {
   interest: number;
   balance: number;
   emi: number;
+  inflationAdjustedEmi?: number;
+  realInterest?: number;
+  taxBenefit?: number;
+  cumulativeInterest?: number;
 }
 
 export interface RetirementInputs {
@@ -140,21 +149,35 @@ export const calculateLumpSumFutureValue = (
 export const calculateEMI = (
   loanAmount: number,
   annualRate: number,
-  tenureYears: number
-): { emi: number; totalInterest: number; totalAmount: number } => {
+  tenureYears: number,
+  processingFee: number = 0,
+  insuranceAmount: number = 0
+): { emi: number; totalInterest: number; totalAmount: number; effectiveLoanAmount: number } => {
   const monthlyRate = annualRate / 100 / 12;
   const months = tenureYears * 12;
+  const effectiveLoanAmount = loanAmount + processingFee + insuranceAmount;
   
-  const emi = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months) / 
+  if (monthlyRate === 0) {
+    const emi = effectiveLoanAmount / months;
+    return {
+      emi: Math.round(emi),
+      totalInterest: 0,
+      totalAmount: Math.round(effectiveLoanAmount),
+      effectiveLoanAmount: Math.round(effectiveLoanAmount)
+    };
+  }
+  
+  const emi = effectiveLoanAmount * monthlyRate * Math.pow(1 + monthlyRate, months) / 
               (Math.pow(1 + monthlyRate, months) - 1);
   
   const totalAmount = emi * months;
-  const totalInterest = totalAmount - loanAmount;
+  const totalInterest = totalAmount - effectiveLoanAmount;
   
   return {
     emi: Math.round(emi),
     totalInterest: Math.round(totalInterest),
     totalAmount: Math.round(totalAmount),
+    effectiveLoanAmount: Math.round(effectiveLoanAmount)
   };
 };
 
@@ -163,24 +186,71 @@ export const generateAmortizationSchedule = (
   annualRate: number,
   tenureYears: number,
   prepaymentAmount: number = 0,
-  prepaymentMonth: number = 0
+  prepaymentMonth: number = 0,
+  processingFee: number = 0,
+  insuranceAmount: number = 0,
+  inflationRate: number = 0,
+  loanType: 'home' | 'personal' | 'car' | 'education' = 'home',
+  taxSection: '24b' | '80c' | 'none' = 'none',
+  variableRates: { year: number; rate: number }[] = []
 ): AmortizationEntry[] => {
-  const monthlyRate = annualRate / 100 / 12;
   const months = tenureYears * 12;
-  const { emi } = calculateEMI(loanAmount, annualRate, tenureYears);
+  const { emi, effectiveLoanAmount } = calculateEMI(loanAmount, annualRate, tenureYears, processingFee, insuranceAmount);
   
-  let balance = loanAmount;
+  let balance = effectiveLoanAmount;
   const schedule: AmortizationEntry[] = [];
+  let cumulativeInterest = 0;
   
   for (let month = 1; month <= months; month++) {
-    const interestPayment = balance * monthlyRate;
-    const principalPayment = emi - interestPayment;
+    const currentYear = Math.floor((month - 1) / 12);
+    let currentAnnualRate = annualRate;
     
+    // Apply variable rates if specified
+    const variableRate = variableRates.find(vr => vr.year === currentYear);
+    if (variableRate) {
+      currentAnnualRate = variableRate.rate;
+    }
+    
+    const monthlyRate = currentAnnualRate / 100 / 12;
+    const interestPayment = balance * monthlyRate;
+    let principalPayment = emi - interestPayment;
+    
+    // Apply prepayment
     if (month === prepaymentMonth && prepaymentAmount > 0) {
       balance -= prepaymentAmount;
+      // Recalculate EMI for remaining balance if significant prepayment
+      if (prepaymentAmount > balance * 0.1) {
+        const remainingMonths = months - month;
+        if (remainingMonths > 0 && monthlyRate > 0) {
+          const newEmi = balance * monthlyRate * Math.pow(1 + monthlyRate, remainingMonths) / 
+                       (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+          principalPayment = newEmi - interestPayment;
+        }
+      }
     }
     
     balance -= principalPayment;
+    cumulativeInterest += interestPayment;
+    
+    // Calculate inflation-adjusted EMI
+    const inflationAdjustedEmi = inflationRate > 0 
+      ? emi / Math.pow(1 + inflationRate / 100 / 12, month - 1)
+      : emi;
+    
+    // Calculate real interest (adjusted for inflation)
+    const realInterestRate = (1 + monthlyRate) / (1 + inflationRate / 100 / 12) - 1;
+    const realInterest = balance > 0 ? balance * realInterestRate : 0;
+    
+    // Calculate tax benefits
+    let taxBenefit = 0;
+    if (taxSection === '24b' && loanType === 'home') {
+      // Section 24(b): Home loan interest deduction (max ₹2,00,000 per year)
+      const yearlyInterest = interestPayment * 12;
+      taxBenefit = Math.min(yearlyInterest, 200000) / 12;
+    } else if (taxSection === '80c' && loanType === 'home') {
+      // Section 80(c): Principal repayment deduction (max ₹1,50,000 per year)
+      taxBenefit = Math.min(principalPayment * 12, 150000) / 12;
+    }
     
     schedule.push({
       month,
@@ -188,6 +258,10 @@ export const generateAmortizationSchedule = (
       interest: Math.round(interestPayment),
       balance: Math.max(0, Math.round(balance)),
       emi: Math.round(emi),
+      inflationAdjustedEmi: Math.round(inflationAdjustedEmi),
+      realInterest: Math.round(realInterest),
+      taxBenefit: Math.round(taxBenefit),
+      cumulativeInterest: Math.round(cumulativeInterest)
     });
     
     if (balance <= 0) break;
@@ -292,5 +366,72 @@ export const calculateGoalBasedInvestment = (
     monthlySIPRequired: Math.round(monthlySIPRequired),
     totalInvestment: Math.round(totalInvestment),
     futureValueOfCurrentSavings: Math.round(futureValueOfCurrentSavings),
+  };
+};
+
+export const calculateAdvancedLoanMetrics = (
+  schedule: AmortizationEntry[],
+  inflationRate: number = 0,
+  loanType: 'home' | 'personal' | 'car' | 'education' = 'home'
+): {
+  totalTaxBenefits: number;
+  effectiveInterestRate: number;
+  realCostOfLoan: number;
+  inflationAdjustedTotalCost: number;
+  averageMonthlyEmi: number;
+  interestToPrincipalRatio: number;
+} => {
+  const totalTaxBenefits = schedule.reduce((sum, entry) => sum + (entry.taxBenefit || 0), 0);
+  const totalInterest = schedule.reduce((sum, entry) => sum + entry.interest, 0);
+  const totalPrincipal = schedule.reduce((sum, entry) => sum + entry.principal, 0);
+  const totalEmi = schedule.reduce((sum, entry) => sum + entry.emi, 0);
+  
+  const effectiveInterestRate = totalPrincipal > 0 ? (totalInterest / totalPrincipal) * 100 : 0;
+  const realCostOfLoan = totalInterest - totalTaxBenefits;
+  const inflationAdjustedTotalCost = inflationRate > 0 
+    ? totalEmi / Math.pow(1 + inflationRate / 100, schedule.length / 12)
+    : totalEmi;
+  const averageMonthlyEmi = schedule.length > 0 ? totalEmi / schedule.length : 0;
+  const interestToPrincipalRatio = totalPrincipal > 0 ? totalInterest / totalPrincipal : 0;
+  
+  return {
+    totalTaxBenefits: Math.round(totalTaxBenefits),
+    effectiveInterestRate: Math.round(effectiveInterestRate * 100) / 100,
+    realCostOfLoan: Math.round(realCostOfLoan),
+    inflationAdjustedTotalCost: Math.round(inflationAdjustedTotalCost),
+    averageMonthlyEmi: Math.round(averageMonthlyEmi),
+    interestToPrincipalRatio: Math.round(interestToPrincipalRatio * 100) / 100,
+  };
+};
+
+export const calculateLoanAffordability = (
+  monthlyIncome: number,
+  existingEmis: number = 0,
+  interestRate: number = 8.5,
+  tenureYears: number = 20,
+  maxDTIRatio: number = 0.4
+): {
+  maxLoanAmount: number;
+  maxEmi: number;
+  recommendedEmi: number;
+  recommendedLoanAmount: number;
+} => {
+  const maxEmi = monthlyIncome * maxDTIRatio - existingEmis;
+  const recommendedEmi = monthlyIncome * 0.3 - existingEmis; // Conservative 30% ratio
+  
+  const monthlyRate = interestRate / 100 / 12;
+  const months = tenureYears * 12;
+  
+  const calculateLoanFromEmi = (emiAmount: number) => {
+    if (monthlyRate === 0) return emiAmount * months;
+    return emiAmount * (Math.pow(1 + monthlyRate, months) - 1) / 
+           (monthlyRate * Math.pow(1 + monthlyRate, months));
+  };
+  
+  return {
+    maxLoanAmount: Math.round(calculateLoanFromEmi(Math.max(0, maxEmi))),
+    maxEmi: Math.round(Math.max(0, maxEmi)),
+    recommendedEmi: Math.round(Math.max(0, recommendedEmi)),
+    recommendedLoanAmount: Math.round(calculateLoanFromEmi(Math.max(0, recommendedEmi))),
   };
 };
